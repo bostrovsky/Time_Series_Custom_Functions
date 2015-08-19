@@ -138,7 +138,7 @@ At this point you should clear your entire environment and close all script file
 
 Set up your working directory. This just helps so that RStudio is looking at the right folder
 ```
-setwd("C:/Users/!USERNAME!/Desktop/Time Series Workshop/")			
+setwd("C:/Users/!USERNAME!/Desktop/Time_Series_Custom_Functions-master/")			
 ```
 <br>
 Run the source code that has your functions in it
