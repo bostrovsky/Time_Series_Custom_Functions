@@ -1,0 +1,169 @@
+---
+title: "Time Series Functions and Viz"
+author: "Hoyt Emerson"
+date: "August 6, 2015"
+output: html_document
+---
+
+<h2>We want to analyze and visualize reported crimes in Chicago.</h2>
+
+You can find the dataset here: <http://catalog.data.gov/dataset/crimes-2001-to-present-398a4>
+
+<br>
+First, let's load our libraries
+
+```
+library(dplyr)
+library(tidyr)
+library(magrittr)
+library(readr)
+library(ggplot2)
+library(scales)
+library(stringr)
+library(zoo)
+
+```
+<br>
+Let's now load our dataset and coerce to a csv:
+
+```
+data <- file.choose()
+data1 <- read_csv(data)
+
+```
+<br>
+Summarise the data down to days and add a month variable column for added flexibility:
+
+```
+#Summarise daily data 
+dataSum <- data1 %>% group_by(Date) %>% summarise(Count=n())
+
+##If you need to change a column date name
+names(dataSum)[1] <- "Date"
+
+#Create column for month
+dataSum$Month <- as.yearmon(dataSum$Date, format = "%m/%d/%Y")
+dataSum$Month <- as.character(dataSum$Month)
+
+```
+<br>
+The next step is to code transform the data more to only give us data for the days in January 2015:
+
+```
+#filter data by date and month
+dataSum1 <- dataSum %>% select(Date, Count)
+dataSum1 %<>% filter(grepl("2015",Date))
+dataSum1 <- dataSum1[grepl(paste("^1"), dataSum1$Date),]
+dataSum1$Date <- as.Date(dataSum1$Date, "%m/%d/%Y")
+dataSum1 %<>% group_by(Date) %>% summarise_each(funs(sum(Count)))
+
+```
+<br>
+Finally visualize the data with a qplot using the scales library:
+
+```
+#create visualization for days in month
+df <- dataSum1[order(dataSum1$Date), ]
+dt <- qplot(Date, Count, data=df, geom="line") + theme(aspect.ratio = 1/2)
+dt + scale_x_date(labels = date_format("%m/%d"),breaks = date_breaks("day"))
+
+```
+
+<h2>Let's use functions to do all that work for us in the future.</h2>
+
+<br>
+Wrap the entire package list, data loading, and transformation code into a function called loadData():
+
+```
+loadData <- function() {
+  
+  library(dplyr)
+  library(tidyr)
+  library(magrittr)
+  library(readr)
+  library(ggplot2)
+  library(scales)
+  library(stringr)
+  library(zoo)
+  
+  
+  #data found at: http://catalog.data.gov/dataset/consumer-complaint-database
+  
+  #Bring in data
+  data <- file.choose()
+  data1 <- read_csv(data)
+  
+  #Summarise daily data 
+  dataSum <- data1 %>% group_by(Date) %>% summarise(Count=n())
+  
+  ##If you need to change a column date name
+  names(dataSum)[1] <- "Date"
+  
+  
+  #Create column for month
+  dataSum$Month <- as.yearmon(dataSum$Date, format = "%m/%d/%Y")
+  dataSum$Month <- as.character(dataSum$Month)
+  
+  save(dataSum, file="dataSum")
+}
+
+```
+*Note: We added 'save(dataSum, file="dataSum")' at the end of the function. What this does is saves that last tranformation of the data in a file that we will load in our other functions so that those functions know what to look at
+
+<br>
+Let's make a function that will automatically create our time series graph. This function will take two variables called 'month' and 'year'. They are strings, so when you load the function and type in a number for month and a number for year you have to close them with "".
+
+```
+monthly <- function(month, year) {
+  
+  load("dataSum")
+  
+  #filter data by date and month
+  dataSum1 <- dataSum %>% select(Date, Count)
+  dataSum1 %<>% filter(grepl(year,Date))
+  dataSum1 <- dataSum1[grepl(paste("^",month,sep=""), dataSum1$Date),]
+  dataSum1$Date <- as.Date(dataSum1$Date, "%m/%d/%Y")
+  dataSum1 %<>% group_by(Date) %>% summarise_each(funs(sum(Count)))
+  #create visualization for days in month
+  df <- dataSum1[order(dataSum1$Date), ]
+  dt <- qplot(Date, Count, data=df, geom="line") + theme(aspect.ratio = 1/2)
+  dt + scale_x_date(labels = date_format("%m/%d"),breaks = date_breaks("day"))
+}
+
+```
+
+<h2>So here would be the new workflow.</h2>
+
+At this point you should clear your entire environment and close all script files. You'll just have a blank console, and this is all you'll need to access and explore the data.
+
+Set up your working directory. This just helps so that RStudio is looking at the right folder
+```
+setwd("C:/Users/!USERNAME!/Desktop/Time Series Workshop/")			
+```
+<br>
+Run the source code that has your functions in it
+```
+source("./Time_Series.R")		
+```
+<br>
+Now you'll see your two functions in the global environment in RStudio. Let's start using them! In your console, you'll simply type:
+
+```
+loadData()
+```
+<br>
+This will bring up a prompt window. Go to the folder of the data and double click. The data will load and transform automatically.
+
+Now we can quickly make a graph for January 2015:
+```
+monthly("1","2015")
+```
+<br>
+You'll see your graph show up in your plots window of RStudio. You wanna make a different plot for a different month? Simply load monthly() again and choose different month numbers or year numbers. 
+
+About me:
+
+<https://hoytemerson.wordpress.com/>
+
+I am a programmatic data analyst and R programmer with a focus on big data, digital analytics, API's and data viz applications using the Shiny framework. I like to solve problems programmatically and give consultation conceptually. I achieve both with a heavy background in web development, digital marketing and product management. I bring a entrepreneurial perspective to a company's ecosystem.
+
